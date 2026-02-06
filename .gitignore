@@ -1,0 +1,8 @@
+node_modules/
+dist/
+session/*
+!session/.gitkeep
+downloads/*
+!downloads/.gitkeep
+.env
+*.log
