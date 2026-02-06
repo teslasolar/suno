@@ -1,5 +1,18 @@
-const BASE = window.location.port === '3456'
-  ? '' : 'http://localhost:3456';
+import { mock } from './mock.js';
+
+const BASE = 'http://localhost:3456';
+let live = false;
+let checked = false;
+
+async function probe() {
+  if (checked) return live;
+  try {
+    const r = await fetch(`${BASE}/health`, { signal: AbortSignal.timeout(1500) });
+    live = r.ok;
+  } catch { live = false; }
+  checked = true;
+  return live;
+}
 
 async function req(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
@@ -10,11 +23,13 @@ async function req(method, path, body) {
 }
 
 export const api = {
-  status: () => req('GET', '/status'),
-  readTag: (p) => req('GET', `/tags/${p}`),
-  writeTag: (p, v) => req('PUT', `/tags/${p}`, { value: v }),
-  readUDT: (p) => req('GET', `/udt/${p}`),
-  generate: (prompt, style, instrumental) =>
-    req('POST', '/generate', { prompt, style, instrumental }),
-  job: (id) => req('GET', `/job/${id}`),
+  isLive: () => live,
+  probe,
+  status:    async () => (await probe()) ? req('GET', '/status')           : mock.status(),
+  readTag:   async (p) => (await probe()) ? req('GET', `/tags/${p}`)       : mock.readTag(p),
+  writeTag:  async (p, v) => (await probe()) ? req('PUT', `/tags/${p}`, { value: v }) : mock.writeTag(p, v),
+  readUDT:   async (p) => (await probe()) ? req('GET', `/udt/${p}`)       : mock.readUDT(p),
+  generate:  async (prompt, style, instrumental) =>
+    (await probe()) ? req('POST', '/generate', { prompt, style, instrumental }) : mock.generate(prompt, style, instrumental),
+  job:       async (id) => (await probe()) ? req('GET', `/job/${id}`)      : mock.job(id),
 };

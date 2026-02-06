@@ -5,8 +5,12 @@ nav{background:var(--sf);border-bottom:1px solid var(--bd);padding:.6rem 1.5rem;
 nav .logo{color:var(--ac);font-weight:700;font-size:1rem}
 nav a{color:var(--dm);text-decoration:none;font-size:.8rem;padding:.3rem .6rem;border-radius:4px;cursor:pointer}
 nav a:hover,nav a.active{color:var(--tx);background:var(--bd)}
-nav .dot{width:6px;height:6px;border-radius:50%;margin-left:auto}
+nav .mode-badge{margin-left:auto;font-size:.6rem;padding:.15rem .5rem;border-radius:3px;font-weight:700;letter-spacing:.05em}
+nav .mode-badge.live{background:#1a3a2a;color:var(--gn)}
+nav .mode-badge.demo{background:#1a2a3a;color:var(--or)}
+nav .dot{width:6px;height:6px;border-radius:50%}
 nav .dot.on{background:var(--gn)}
+nav .dot.on.demo{background:var(--or)}
 nav .dot.off{background:var(--rd)}
 main{max-width:960px;margin:0 auto;padding:1.5rem}
 h2{font-size:1rem;color:var(--ac);margin:0 0 1rem;border-bottom:1px solid var(--bd);padding-bottom:.5rem}

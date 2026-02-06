@@ -14,18 +14,24 @@ el.innerHTML = `<span class="logo">KONOMI</span>` +
   links.map(([r, l]) =>
     `<a data-route="${r}" href="#${r}">${l}</a>`
   ).join('') +
-  `<span class="dot off" id="conn-dot" title="API offline"></span>`;
+  `<span class="mode-badge" id="mode-badge">...</span>` +
+  `<span class="dot off" id="conn-dot"></span>`;
 
 async function poll() {
   const dot = document.getElementById('conn-dot');
-  try {
-    await api.status();
+  const badge = document.getElementById('mode-badge');
+  await api.probe();
+  if (api.isLive()) {
     dot.className = 'dot on';
-    dot.title = 'API online';
-  } catch {
-    dot.className = 'dot off';
-    dot.title = 'API offline';
+    dot.title = 'API live on localhost:3456';
+    badge.textContent = 'LIVE';
+    badge.className = 'mode-badge live';
+  } else {
+    dot.className = 'dot on demo';
+    dot.title = 'Running in demo mode (in-browser)';
+    badge.textContent = 'DEMO';
+    badge.className = 'mode-badge demo';
   }
 }
 poll();
-setInterval(poll, 5000);
+setInterval(poll, 10000);
