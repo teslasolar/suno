@@ -3,18 +3,52 @@ import { tags } from './tags.js';
 
 const B = 'Konomi';
 
+/**
+ * Browser profile resolution:
+ *   1. CHROME_PROFILE env var  → use that exact path (your real browser profile)
+ *   2. Cfg/Path/Session tag    → Playwright-managed persistent context (./session)
+ *
+ * To reuse your existing logged-in Chrome session:
+ *   Linux:   CHROME_PROFILE=~/.config/google-chrome/Default
+ *   macOS:   CHROME_PROFILE=~/Library/Application Support/Google/Chrome/Default
+ *   Windows: CHROME_PROFILE=%LOCALAPPDATA%\Google\Chrome\User Data\Default
+ *
+ * Or point at a Chromium/Brave/Edge profile the same way.
+ * The server will inherit all cookies, localStorage, and session data.
+ */
 export class SunoBrowser {
   private ctx: BrowserContext | null = null;
   private pg: Page | null = null;
 
+  private get profilePath(): string {
+    return process.env.CHROME_PROFILE
+      || tags.read(`${B}/Cfg/Path/Session`) as string
+      || './session';
+  }
+
   async init() {
     tags.write(`${B}/Equip/SessionMgr/State`, 1);
-    this.ctx = await chromium.launchPersistentContext(
-      tags.read(`${B}/Cfg/Path/Session`) as string,
-      { headless: true }
-    );
+
+    const headless = process.env.HEADLESS !== 'false';
+    const profile = this.profilePath;
+    console.log(`Browser profile: ${profile} (headless=${headless})`);
+
+    // Channel lets Playwright use the system-installed Chrome
+    // instead of downloading its own Chromium
+    const channel = process.env.CHROME_PROFILE ? 'chrome' : undefined;
+
+    this.ctx = await chromium.launchPersistentContext(profile, {
+      headless,
+      channel,
+      args: [
+        '--disable-blink-features=AutomationControlled',
+        '--no-first-run',
+      ],
+    });
+
     this.pg = this.ctx.pages()[0] || await this.ctx.newPage();
     tags.write(`${B}/Browser/Connected`, true);
+    tags.write(`${B}/Browser/Headless`, headless);
     tags.write(`${B}/Equip/SessionMgr/State`, 2);
     await this.check();
   }

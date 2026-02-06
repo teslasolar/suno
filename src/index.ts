@@ -2,10 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import { v4 as uuid } from 'uuid';
 import { tags } from './tags.js';
-import { SunoBrowser } from './browser.js';
+
+const NO_BROWSER = process.argv.includes('--no-browser') || process.env.NO_BROWSER === '1';
+const PORT = parseInt(process.env.PORT || '3456');
 
 const app = express();
-const suno = new SunoBrowser();
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
@@ -43,39 +44,19 @@ tags.write('Konomi/_Meta/ISALevel', 2);
 tags.write('Konomi/_Meta/StartedAt', new Date());
 
 // Init equipment states
-tags.writeUDT('Konomi/Equip/SessionMgr', {
-  ID: uuid(),
-  Name: 'SessionMgr',
-  State: 0,
-  Mode: 1,
-  Cmd: 0,
-  Health: 1.0,
-  Heartbeat: new Date(),
-  FaultCode: 0,
-  FaultMsg: '',
-});
-tags.writeUDT('Konomi/Equip/GenEngine', {
-  ID: uuid(),
-  Name: 'GenEngine',
-  State: 0,
-  Mode: 1,
-  Cmd: 0,
-  Health: 1.0,
-  Heartbeat: new Date(),
-  FaultCode: 0,
-  FaultMsg: '',
-});
-tags.writeUDT('Konomi/Equip/AssetMgr', {
-  ID: uuid(),
-  Name: 'AssetMgr',
-  State: 0,
-  Mode: 1,
-  Cmd: 0,
-  Health: 1.0,
-  Heartbeat: new Date(),
-  FaultCode: 0,
-  FaultMsg: '',
-});
+for (const name of ['SessionMgr', 'GenEngine', 'AssetMgr']) {
+  tags.writeUDT(`Konomi/Equip/${name}`, {
+    ID: uuid(),
+    Name: name,
+    State: 0,
+    Mode: 1,
+    Cmd: 0,
+    Health: 1.0,
+    Heartbeat: new Date(),
+    FaultCode: 0,
+    FaultMsg: '',
+  });
+}
 
 // Init metrics
 tags.write('Konomi/Metrics/Uptime', 0);
@@ -95,7 +76,25 @@ tags.write('Konomi/Alarms/RateLimited', false);
 tags.write('Konomi/Jobs/ActiveCt', 0);
 tags.write('Konomi/Jobs/TotalProc', 0);
 
-// Routes
+// Init session/browser defaults
+tags.write('Konomi/Session/State', 0);
+tags.write('Konomi/Session/Credits', 0);
+tags.write('Konomi/Browser/Connected', false);
+tags.write('Konomi/Browser/URL', '');
+tags.write('Konomi/Browser/Page', 0);
+
+// --- Routes ---
+
+app.get('/health', (_req, res) => {
+  res.json({
+    ok: true,
+    version: tags.read('Konomi/_Meta/Version'),
+    browser: !NO_BROWSER,
+    tags: tags.size(),
+    uptime: process.uptime(),
+  });
+});
+
 app.get('/status', (_req, res) => {
   res.json({
     equip: tags.readUDT('Konomi/Equip'),
@@ -104,6 +103,11 @@ app.get('/status', (_req, res) => {
     alarms: tags.readUDT('Konomi/Alarms'),
     metrics: tags.readUDT('Konomi/Metrics'),
   });
+});
+
+app.get('/tags', (_req, res) => {
+  const prefix = (typeof _req.query.prefix === 'string') ? _req.query.prefix : undefined;
+  res.json({ keys: tags.keys(prefix), count: tags.keys(prefix).length });
 });
 
 app.get('/tags/*', (req, res) => {
@@ -119,7 +123,12 @@ app.get('/udt/*', (req, res) => {
   res.json(tags.readUDT(req.params[0]));
 });
 
+app.get('/dump', (_req, res) => {
+  res.json(tags.dump());
+});
+
 app.post('/generate', async (req, res) => {
+  if (!req.body.prompt) return res.status(400).json({ error: 'prompt required' });
   const id = uuid();
   tags.writeUDT('Konomi/Jobs/Active/0', {
     ID: id,
@@ -131,7 +140,12 @@ app.post('/generate', async (req, res) => {
       ReqAt: new Date(),
     },
   });
-  suno.gen(id).catch(console.error);
+  tags.write('Konomi/Jobs/ActiveCt', ((tags.read('Konomi/Jobs/ActiveCt') as number) || 0) + 1);
+  if (!NO_BROWSER) {
+    const { SunoBrowser } = await import('./browser.js');
+    const suno = new SunoBrowser();
+    suno.gen(id).catch(console.error);
+  }
   res.json({ jobId: id, status: 'queued' });
 });
 
@@ -141,6 +155,29 @@ app.get('/job/:id', (req, res) => {
   res.json(j);
 });
 
-suno.init().then(() =>
-  app.listen(3456, () => console.log('Konomi Suno API: http://localhost:3456'))
-);
+// --- Start ---
+
+async function start() {
+  if (!NO_BROWSER) {
+    try {
+      const { SunoBrowser } = await import('./browser.js');
+      const suno = new SunoBrowser();
+      await suno.init();
+      console.log('Browser initialized');
+    } catch (e: any) {
+      console.error('Browser init failed:', e.message);
+      tags.write('Konomi/Equip/SessionMgr/FaultMsg', e.message);
+      tags.write('Konomi/Equip/SessionMgr/State', 7);
+    }
+  } else {
+    console.log('Running in no-browser mode');
+    tags.write('Konomi/Equip/SessionMgr/State', 2);
+    tags.write('Konomi/Equip/GenEngine/State', 2);
+    tags.write('Konomi/Equip/AssetMgr/State', 2);
+  }
+  app.listen(PORT, () => console.log(`Konomi Suno API: http://localhost:${PORT}`));
+}
+
+start();
+
+export { app, tags };

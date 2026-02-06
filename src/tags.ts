@@ -15,6 +15,28 @@ class TagStore extends EventEmitter {
     if (old !== v) this.emit('change', { p, old, v });
   }
 
+  dump(): Record<string, Val> {
+    const o: Record<string, Val> = {};
+    for (const [k, v] of this.t) o[k] = v;
+    return o;
+  }
+
+  clear() {
+    this.t.clear();
+  }
+
+  size(): number {
+    return this.t.size;
+  }
+
+  keys(prefix?: string): string[] {
+    const r: string[] = [];
+    for (const k of this.t.keys()) {
+      if (!prefix || k.startsWith(prefix)) r.push(k);
+    }
+    return r.sort();
+  }
+
   readUDT<T>(base: string): T {
     const r: any = {};
     for (const [k, v] of this.t) {

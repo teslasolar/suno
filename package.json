@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
-    "dev": "HEADLESS=false tsx src/index.ts"
+    "dev": "HEADLESS=false tsx src/index.ts",
+    "test:server": "NO_BROWSER=1 tsx src/index.ts",
+    "test": "NO_BROWSER=1 tsx test/run.ts"
   },
   "dependencies": {
     "express": "^4.18.2",
