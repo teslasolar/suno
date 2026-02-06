@@ -20,17 +20,23 @@ el.innerHTML = `<span class="logo">KONOMI</span>` +
 async function poll() {
   const dot = document.getElementById('conn-dot');
   const badge = document.getElementById('mode-badge');
-  await api.probe();
-  if (api.isLive()) {
+  try {
+    const h = await api.health();
     dot.className = 'dot on';
-    dot.title = 'API live on localhost:3456';
-    badge.textContent = 'LIVE';
-    badge.className = 'mode-badge live';
-  } else {
-    dot.className = 'dot on demo';
-    dot.title = 'Running in demo mode (in-browser)';
-    badge.textContent = 'DEMO';
-    badge.className = 'mode-badge demo';
+    if (h.authenticated) {
+      badge.textContent = 'LIVE';
+      badge.className = 'mode-badge live';
+      dot.title = 'Connected + Authenticated';
+    } else {
+      badge.textContent = 'NO AUTH';
+      badge.className = 'mode-badge demo';
+      dot.title = 'Connected but not authenticated';
+    }
+  } catch {
+    dot.className = 'dot off';
+    dot.title = 'API offline';
+    badge.textContent = 'OFFLINE';
+    badge.className = 'mode-badge';
   }
 }
 poll();

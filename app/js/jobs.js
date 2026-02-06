@@ -1,39 +1,35 @@
 import { api } from './api.js';
 import { router } from './router.js';
 
-const JSTATES = ['Queued','Submitted','Processing','Done','Failed'];
-const jbadge = (s) => s===3?'ok':s===4?'err':'info';
-
 router.register('jobs', async (el) => {
   el.innerHTML = `
-    <h2>Jobs</h2>
-    <div class="card"><h3>Active</h3><div id="jobs-active"></div></div>
-    <div class="card"><h3>Queue</h3><div id="jobs-queue"></div></div>
-    <div class="card"><h3>History</h3><div id="jobs-hist"></div></div>`;
+    <h2>Recent Songs</h2>
+    <div id="jobs-list" class="empty">Loading...</div>
+    <div style="margin-top:1rem">
+      <button id="jobs-refresh" class="secondary">Refresh</button>
+    </div>`;
 
-  const render = (target, data) => {
-    const entries = Object.entries(data || {}).filter(([,v]) => v?.ID);
-    if (!entries.length) { target.innerHTML = '<div class="empty">Empty</div>'; return; }
-    target.innerHTML = `<table><thead><tr>
-      <th>ID</th><th>State</th><th>Prompt</th><th>Time</th>
-    </tr></thead><tbody>${entries.map(([,j]) => `<tr>
-      <td style="color:var(--yw)">${(j.ID||'').slice(0,8)}</td>
-      <td><span class="badge ${jbadge(j.State)}">${JSTATES[j.State]??'?'}</span></td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${j.Req?.Prompt||'—'}</td>
-      <td style="color:var(--dm)">${j.Req?.ReqAt?new Date(j.Req.ReqAt).toLocaleTimeString():'—'}</td>
-    </tr>`).join('')}</tbody></table>`;
-  };
-
-  try {
-    const [active, queue, hist] = await Promise.all([
-      api.readUDT('Konomi/Jobs/Active'),
-      api.readUDT('Konomi/Jobs/Queue'),
-      api.readUDT('Konomi/Jobs/History'),
-    ]);
-    render(document.getElementById('jobs-active'), active);
-    render(document.getElementById('jobs-queue'), queue);
-    render(document.getElementById('jobs-hist'), hist);
-  } catch (e) {
-    el.innerHTML += `<div class="empty">Error: ${e.message}</div>`;
+  async function load() {
+    try {
+      const clips = await api.library(0);
+      const target = document.getElementById('jobs-list');
+      if (!clips.length) {
+        target.innerHTML = '<div class="empty">No clips found</div>';
+        return;
+      }
+      target.innerHTML = `<table><thead><tr>
+        <th>Title</th><th>Status</th><th>Style</th><th>Created</th>
+      </tr></thead><tbody>${clips.map(c => `<tr>
+        <td style="color:var(--yw)">${c.title || '—'}</td>
+        <td><span class="badge ${c.status==='complete'?'ok':c.status==='error'?'err':'info'}">${c.status}</span></td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dm)">${c.metadata?.tags || c.metadata?.gpt_description_prompt || '—'}</td>
+        <td style="color:var(--dm)">${c.created_at ? new Date(c.created_at).toLocaleString() : '—'}</td>
+      </tr>`).join('')}</tbody></table>`;
+    } catch (e) {
+      document.getElementById('jobs-list').innerHTML = `<div class="empty">${e.message}</div>`;
+    }
   }
+
+  document.getElementById('jobs-refresh').onclick = load;
+  load();
 });

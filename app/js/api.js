@@ -1,35 +1,30 @@
-import { mock } from './mock.js';
-
-const BASE = 'http://localhost:3456';
-let live = false;
-let checked = false;
-
-async function probe() {
-  if (checked) return live;
-  try {
-    const r = await fetch(`${BASE}/health`, { signal: AbortSignal.timeout(1500) });
-    live = r.ok;
-  } catch { live = false; }
-  checked = true;
-  return live;
-}
+const BASE = window.location.origin;
 
 async function req(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
   if (body) opts.body = JSON.stringify(body);
   const r = await fetch(`${BASE}${path}`, opts);
-  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    throw new Error(d.error || `${r.status} ${r.statusText}`);
+  }
   return r.json();
 }
 
 export const api = {
-  isLive: () => live,
-  probe,
-  status:    async () => (await probe()) ? req('GET', '/status')           : mock.status(),
-  readTag:   async (p) => (await probe()) ? req('GET', `/tags/${p}`)       : mock.readTag(p),
-  writeTag:  async (p, v) => (await probe()) ? req('PUT', `/tags/${p}`, { value: v }) : mock.writeTag(p, v),
-  readUDT:   async (p) => (await probe()) ? req('GET', `/udt/${p}`)       : mock.readUDT(p),
-  generate:  async (prompt, style, instrumental) =>
-    (await probe()) ? req('POST', '/generate', { prompt, style, instrumental }) : mock.generate(prompt, style, instrumental),
-  job:       async (id) => (await probe()) ? req('GET', `/job/${id}`)      : mock.job(id),
+  health:     () => req('GET', '/health'),
+  status:     () => req('GET', '/status'),
+  authStatus: () => req('GET', '/auth/status'),
+  authCookie: (cookie) => req('POST', '/auth/cookie', { cookie }),
+  credits:    () => req('GET', '/credits'),
+  library:    (page = 0) => req('GET', `/library?page=${page}`),
+  clip:       (id) => req('GET', `/clip/${id}`),
+  generate:   (prompt, style, title, instrumental) =>
+    req('POST', '/generate', { prompt, style, title, instrumental }),
+  poll:       (ids) => req('GET', `/poll?ids=${ids.join(',')}`),
+  lyrics:     (prompt) => req('POST', '/lyrics', { prompt }),
+  lyricsGet:  (id) => req('GET', `/lyrics/${id}`),
+  readTag:    (p) => req('GET', `/tags/${p}`),
+  writeTag:   (p, v) => req('PUT', `/tags/${p}`, { value: v }),
+  readUDT:    (p) => req('GET', `/udt/${p}`),
 };
