@@ -79,6 +79,17 @@ app.get('/auth/status', (_req, res) => {
   res.json({ authenticated: suno.isReady(), session: tags.readUDT('Konomi/Session') });
 });
 
+// Extract cookie from local browser DB and authenticate
+app.post('/auth/extract', async (req, res) => {
+  const browser = req.body.browser; // optional: "chrome", "brave", "edge", "chromium"
+  try {
+    const { extractCookies } = await import('./cookie.js');
+    const cookie = await extractCookies(browser);
+    await suno.init(cookie);
+    res.json({ ok: true, credits: tags.read('Konomi/Session/Credits') });
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
 // --- Suno proxy ---
 app.get('/credits', async (_req, res) => {
   try { await suno.loadCredits(); res.json({ credits: tags.read('Konomi/Session/Credits') }); }

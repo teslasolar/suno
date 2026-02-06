@@ -4,21 +4,23 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
-    "dev": "HEADLESS=false tsx src/index.ts",
-    "test:server": "NO_BROWSER=1 tsx src/index.ts",
+    "cookie": "tsx src/cookie.ts",
+    "cookie:print": "tsx src/cookie.ts --print",
+    "cookie:chrome": "tsx src/cookie.ts --chrome",
+    "cookie:brave": "tsx src/cookie.ts --brave",
     "test": "NO_BROWSER=1 tsx test/run.ts"
   },
   "dependencies": {
-    "express": "^4.18.2",
     "cors": "^2.8.5",
-    "playwright": "^1.40.0",
+    "express": "^4.18.2",
+    "sql.js": "^1.13.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.0",
-    "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
-    "@types/uuid": "^9.0.7"
+    "@types/express": "^4.17.21",
+    "@types/uuid": "^9.0.7",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
   }
 }

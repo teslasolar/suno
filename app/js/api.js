@@ -16,6 +16,7 @@ export const api = {
   status:     () => req('GET', '/status'),
   authStatus: () => req('GET', '/auth/status'),
   authCookie: (cookie) => req('POST', '/auth/cookie', { cookie }),
+  authExtract:(browser) => req('POST', '/auth/extract', { browser }),
   credits:    () => req('GET', '/credits'),
   library:    (page = 0) => req('GET', `/library?page=${page}`),
   clip:       (id) => req('GET', `/clip/${id}`),
