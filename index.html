@@ -3,130 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Konomi Suno API</title>
-  <style>
-    :root { --bg: #0a0a0f; --surface: #12121a; --border: #1e1e2e; --text: #e0e0e8; --dim: #6b6b80; --accent: #7c5cfc; --green: #3ddc84; --red: #ff4d6a; --yellow: #ffd866; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; background: var(--bg); color: var(--text); line-height: 1.6; }
-    .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
-    h1 { font-size: 1.5rem; color: var(--accent); margin-bottom: 0.25rem; }
-    h1 span { color: var(--dim); font-weight: 400; }
-    .subtitle { color: var(--dim); font-size: 0.85rem; margin-bottom: 2rem; }
-    h2 { font-size: 1rem; color: var(--accent); margin: 2rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }
-    .card h3 { font-size: 0.85rem; color: var(--yellow); margin-bottom: 0.5rem; }
-    .tree { font-size: 0.8rem; color: var(--dim); white-space: pre; overflow-x: auto; }
-    .tree .hl { color: var(--green); }
-    .tree .type { color: var(--accent); }
-    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
-    th { color: var(--dim); font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; }
-    td:first-child { color: var(--yellow); }
-    .method { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 3px; min-width: 3rem; text-align: center; }
-    .get { background: #1a3a2a; color: var(--green); }
-    .put { background: #3a3a1a; color: var(--yellow); }
-    .post { background: #3a1a2a; color: var(--red); }
-    .state-diagram { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8rem; margin: 1rem 0; }
-    .state { background: var(--surface); border: 1px solid var(--border); padding: 0.3rem 0.7rem; border-radius: 4px; }
-    .state.active { border-color: var(--green); color: var(--green); }
-    .arrow { color: var(--dim); }
-    code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.8rem; color: var(--yellow); }
-    .setup { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; font-size: 0.8rem; color: var(--dim); white-space: pre; overflow-x: auto; }
-    .setup .cmd { color: var(--green); }
-    .setup .comment { color: var(--dim); }
-    .badges { display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
-    .badge { font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 3px; border: 1px solid var(--border); color: var(--dim); }
-    .badge.isa { border-color: var(--accent); color: var(--accent); }
-    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--dim); font-size: 0.75rem; text-align: center; }
-  </style>
+  <title>Konomi Suno</title>
+  <link rel="stylesheet" href="app/styles.css">
 </head>
 <body>
-  <div class="container">
-    <h1>KONOMI <span>Suno API</span></h1>
-    <p class="subtitle">ISA-95/101 Browser Automation for AI Music Generation</p>
-
-    <div class="badges">
-      <span class="badge isa">ISA-95 Level 2</span>
-      <span class="badge">TypeScript</span>
-      <span class="badge">Playwright</span>
-      <span class="badge">Express</span>
-      <span class="badge">v1.0.0</span>
-    </div>
-
-    <h2>Equipment Model</h2>
-    <div class="card">
-      <div class="tree">Enterprise: <span class="hl">Konomi</span>
-  └─ Site: <span class="hl">AudioGeneration</span>
-       └─ Area: <span class="hl">SunoIntegration</span>
-            └─ WorkCell: <span class="hl">BrowserAutomation</span>
-                 ├─ EquipmentModule: <span class="type">SessionMgr</span>
-                 ├─ EquipmentModule: <span class="type">GenEngine</span>
-                 └─ EquipmentModule: <span class="type">AssetMgr</span></div>
-    </div>
-
-    <h2>State Machine (ISA-88)</h2>
-    <div class="card">
-      <div class="state-diagram">
-        <span class="state">OFFLINE</span>
-        <span class="arrow">─Init─►</span>
-        <span class="state">STARTING</span>
-        <span class="arrow">─Ready─►</span>
-        <span class="state">IDLE</span>
-        <span class="arrow">─Session─►</span>
-        <span class="state active">READY</span>
-        <span class="arrow">─Generate─►</span>
-        <span class="state">RUNNING</span>
-        <span class="arrow">─Complete─►</span>
-        <span class="state active">READY</span>
-      </div>
-      <div class="state-diagram">
-        <span class="state" style="border-color:var(--red);color:var(--red)">FAULT</span>
-        <span class="arrow">─Reset─►</span>
-        <span class="state">OFFLINE</span>
-      </div>
-    </div>
-
-    <h2>API Endpoints</h2>
-    <div class="card">
-      <table>
-        <thead><tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method get">GET</span></td><td><code>/status</code></td><td>Full system state</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/tags/{path}</code></td><td>Read tag value</td></tr>
-          <tr><td><span class="method put">PUT</span></td><td><code>/tags/{path}</code></td><td>Write tag value</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/udt/{path}</code></td><td>Read UDT structure</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/generate</code></td><td>Submit generation job</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/job/{id}</code></td><td>Job status</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h2>Tag Structure</h2>
-    <div class="card">
-      <div class="tree">Konomi/
-├─ _Meta/          <span class="type">Version, ISALevel, StartedAt</span>
-├─ Equip/
-│   ├─ SessionMgr/ <span class="type">UDT_Equipment</span>
-│   ├─ GenEngine/  <span class="type">UDT_Equipment</span>
-│   └─ AssetMgr/   <span class="type">UDT_Equipment</span>
-├─ Session/        <span class="type">UDT_Session</span>
-├─ Browser/        <span class="type">UDT_Browser</span>
-├─ Jobs/
-│   ├─ Active[]    <span class="type">UDT_Job</span>
-│   ├─ Queue[]     <span class="type">UDT_Job</span>
-│   └─ History[]   <span class="type">UDT_Job</span>
-├─ Cmd/            <span class="type">Login, Generate, Cancel, Refresh</span>
-├─ Cfg/            <span class="type">Selectors, Timeouts, Limits, Paths</span>
-├─ Metrics/        <span class="type">Uptime, JobsDone, AvgGenTime</span>
-└─ Alarms/         <span class="type">SessionExp, LowCredits, GenFailed</span></div>
-    </div>
-
-    <h2>Setup</h2>
-    <div class="setup"><span class="cmd">npm i</span> && <span class="cmd">npx playwright install chromium</span>
-<span class="cmd">npm run dev</span>    <span class="comment"># headed — login manually</span>
-<span class="cmd">npm start</span>      <span class="comment"># headless — uses saved session</span></div>
-
-    <footer>Konomi Suno API &middot; ISA-95 Level 2 &middot; Port 3456</footer>
-  </div>
+  <nav id="nav"></nav>
+  <main id="app"></main>
+  <div id="toast" class="toast hidden"></div>
+  <script type="module" src="app/js/api.js"></script>
+  <script type="module" src="app/js/router.js"></script>
+  <script type="module" src="app/js/nav.js"></script>
+  <script type="module" src="app/js/auth.js"></script>
+  <script type="module" src="app/js/status.js"></script>
+  <script type="module" src="app/js/generate.js"></script>
+  <script type="module" src="app/js/library.js"></script>
+  <script type="module" src="app/js/jobs.js"></script>
+  <script type="module" src="app/js/tags.js"></script>
+  <script type="module">
+    import { router } from './app/js/router.js';
+    router.init();
+  </script>
 </body>
 </html>
